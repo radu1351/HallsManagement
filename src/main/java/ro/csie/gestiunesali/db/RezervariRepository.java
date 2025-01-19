@@ -3,6 +3,9 @@ package ro.csie.gestiunesali.db;
 import ro.csie.gestiunesali.model.Profesor;
 import ro.csie.gestiunesali.model.Rezervare;
 import ro.csie.gestiunesali.model.Sala;
+import ro.csie.gestiunesali.observer.ConsoleLogger;
+import ro.csie.gestiunesali.observer.EmailNotifier;
+import ro.csie.gestiunesali.observer.Subject;
 import ro.csie.gestiunesali.singletone.DatabaseConnection;
 
 import java.sql.Connection;
@@ -15,12 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RezervariRepository {
+public class RezervariRepository extends Subject {
     private volatile static RezervariRepository instance;
     private final List<Rezervare> rezervari = new ArrayList<>();
 
     private RezervariRepository() {
         loadFromDatabase();
+        addObserver(new EmailNotifier());
+        addObserver(new ConsoleLogger());
     }
 
     public static RezervariRepository getInstance() {
@@ -94,6 +99,7 @@ public class RezervariRepository {
             int rowsInserted = preparedStatement.executeUpdate();
             if (rowsInserted > 0) {
                 System.out.println("Rezervare adaugata cu succes in baza de date: " + rezervare);
+                notifyObservers("Rezervarea a fost adaugata cu succes.");
             } else {
                 System.out.println("Rezervarea nu a putut fi adaugata in baza de date.");
                 rezervari.remove(rezervare);
@@ -102,40 +108,6 @@ public class RezervariRepository {
         } catch (SQLException e) {
             System.err.println("Eroare la adaugarea rezervarii in baza de date: " + e.getMessage());
             rezervari.remove(rezervare);
-        }
-    }
-
-    public boolean stergeRezervare(Rezervare rezervare) {
-        boolean removed = rezervari.remove(rezervare);
-
-        if (!removed) {
-            System.out.println("Rezervarea nu exista in lista locala.");
-            return false;
-        }
-
-        String sql = "DELETE FROM rezervari WHERE profesor_id = ? AND sala_nume = ? AND inceput = ? AND sfarsit = ?";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        try (Connection connection = DatabaseConnection.getInstance().getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-
-            preparedStatement.setString(1, rezervare.getProfesor().getId());
-            preparedStatement.setString(2, rezervare.getSala().getNume());
-            preparedStatement.setString(3, rezervare.getInceput().format(formatter));
-            preparedStatement.setString(4, rezervare.getSfarsit().format(formatter));
-
-            int rowsDeleted = preparedStatement.executeUpdate();
-            if (rowsDeleted > 0) {
-                System.out.println("Rezervarea a fost stearsa cu succes din baza de date: " + rezervare);
-                return true;
-            } else {
-                System.out.println("Rezervarea nu a fost gasita in baza de date.");
-                return false;
-            }
-
-        } catch (SQLException e) {
-            System.err.println("Eroare la stergerea rezervarii din baza de date: " + e.getMessage());
-            return false;
         }
     }
 

@@ -5,7 +5,6 @@ import ro.csie.gestiunesali.model.Laborator;
 import ro.csie.gestiunesali.model.Sala;
 import ro.csie.gestiunesali.model.SalaConferinte;
 import ro.csie.gestiunesali.model.SalaCurs;
-import ro.csie.gestiunesali.observer.Subject;
 import ro.csie.gestiunesali.singletone.DatabaseConnection;
 import ro.csie.gestiunesali.specification.AndSpecification;
 import ro.csie.gestiunesali.specification.CapacitateMinimaSpec;
@@ -21,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class SalaRepository extends Subject {
+public class SalaRepository {
     private volatile static SalaRepository instance;
     private final List<Sala> sali = new ArrayList<>();
 
